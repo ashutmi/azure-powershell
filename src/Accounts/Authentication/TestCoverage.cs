@@ -34,6 +34,9 @@ namespace Microsoft.Azure.Commands.Common.Authentication
         private const string CsvHeaderScriptLineNumber = "LineNumber";
         private const string CsvHeaderStartDateTime = "StartDateTime";
         private const string CsvHeaderEndDateTime = "EndDateTime";
+        private const string CsvHeaderTotalDuration = "TotalDuration";
+        private const string CsvHeaderSanitizeDuration = "SanitizeDuration";
+        private const string CsvHeaderSanitizePercentage = "SanitizePercentage";
         private const string CsvHeaderIsSuccess = "IsSuccess";
         private const string Delimiter = ",";
 
@@ -81,12 +84,15 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                          .Append(CsvHeaderScriptLineNumber).Append(Delimiter)
                          .Append(CsvHeaderStartDateTime).Append(Delimiter)
                          .Append(CsvHeaderEndDateTime).Append(Delimiter)
+                         .Append(CsvHeaderTotalDuration).Append(Delimiter)
+                         .Append(CsvHeaderSanitizeDuration).Append(Delimiter)
+                         .Append(CsvHeaderSanitizePercentage).Append(Delimiter)
                          .Append(CsvHeaderIsSuccess);
 
             return headerBuilder.ToString();
         }
 
-        private string GenerateCsvItem(string commandName, string parameterSetName, string parameters, string sourceScript, int scriptLineNumber, string startDateTime, string endDateTime, bool isSuccess)
+        private string GenerateCsvItem(string commandName, string parameterSetName, string parameters, string sourceScript, int scriptLineNumber, string startDateTime, string endDateTime, string totalDuration, string sanitizeDuration, string sanitizePercentage, bool isSuccess)
         {
             StringBuilder itemBuilder = new StringBuilder();
             itemBuilder.Append(commandName).Append(Delimiter)
@@ -96,6 +102,9 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                        .Append(scriptLineNumber).Append(Delimiter)
                        .Append(startDateTime).Append(Delimiter)
                        .Append(endDateTime).Append(Delimiter)
+                       .Append(totalDuration).Append(Delimiter)
+                       .Append(sanitizeDuration).Append(Delimiter)
+                       .Append(sanitizePercentage).Append(Delimiter)
                        .Append(isSuccess.ToString().ToLowerInvariant());
 
             return itemBuilder.ToString();
@@ -131,8 +140,18 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                 }
 
                 csvData.AppendLine();
-                var csvItem = GenerateCsvItem(commandName, qos.ParameterSetName, qos.Parameters, sourceScriptName, qos.ScriptLineNumber, qos.StartTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), qos.EndTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), qos.IsSuccess);
+                var totalDuration = qos.Duration.TotalMilliseconds;
+                var sanitizeDuration = qos.SanitizerInfo?.SanitizeDuration.TotalMilliseconds ?? 0.0;
+                var sanitizePercentage = totalDuration == 0.0 ? 0.0 : sanitizeDuration / totalDuration;
+                var csvItem = GenerateCsvItem(commandName, qos.ParameterSetName, qos.Parameters, sourceScriptName, qos.ScriptLineNumber, qos.StartTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), qos.EndTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), totalDuration.ToString("F4"), sanitizeDuration.ToString("F4"), sanitizePercentage.ToString("P2"), qos.IsSuccess);
                 csvData.Append(csvItem);
+
+                Console.WriteLine($"Command Name: {commandName}");
+                Console.WriteLine($"Parameter Set Name: {qos.ParameterSetName}");
+                Console.WriteLine($"Parameters: {qos.Parameters}");
+                Console.WriteLine($"Total Duration: {totalDuration:F4}");
+                Console.WriteLine($"Sanitize Duration: {sanitizeDuration:F4}");
+                Console.WriteLine($"Sanitize Percentage: {sanitizePercentage:P2}");
 
                 File.AppendAllText(csvFilePath, csvData.ToString());
             }
