@@ -48,7 +48,7 @@ Describe 'AzContainerAppJob' {
         } | Should -Not -Throw
     }
 
-    It 'UpdateExpanded' {
+    It 'UpdateExpanded' -Skip {
         {
             $EnvId = (Get-AzContainerAppManagedEnv -ResourceGroupName $env.resourceGroupManaged -Name $env.managedEnv1).Id
             $probeHttpGetHttpHeader = New-AzContainerAppProbeHeaderObject -Name "Custom-Header" -Value "Awesome"

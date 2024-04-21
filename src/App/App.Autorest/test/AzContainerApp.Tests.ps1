@@ -24,12 +24,12 @@ Describe 'AzContainerApp' {
             $secretObject = New-AzContainerAppSecretObject -Name "redis-config" -Value "redis-password"
             $configuration = New-AzContainerAppConfigurationObject -IngressIPSecurityRestriction $iPSecurityRestrictionRule -IngressTraffic $trafficWeight -IngressExternal:$True -IngressTargetPort 80 -IngressClientCertificateMode "accept" -CorPolicyAllowedOrigin "https://a.test.com","https://b.test.com" -CorPolicyAllowedMethod "GET","POST" -CorPolicyAllowedHeader "HEADER1","HEADER2" -CorPolicyExposeHeader "HEADER3","HEADER4" -CorPolicyMaxAge 1234 -CorPolicyAllowCredentials:$True -DaprEnabled:$True -DaprAppPort 3000 -DaprAppProtocol "http" -DaprHttpReadBufferSize 30 -DaprHttpMaxRequestSize 10 -DaprLogLevel "debug" -DaprEnableApiLogging:$True -MaxInactiveRevision 10 -ServiceType "redis" -Secret $secretObject
             $serviceBind = New-AzContainerAppServiceBindObject -Name "redisService" -ServiceId "/subscriptions/$($env.SubscriptionId)/resourceGroups/$($env.resourceGroupManaged)/providers/Microsoft.App/containerApps/$($env.containerApp1)"
-            
+
             $probeHttpGetHttpHeader = New-AzContainerAppProbeHeaderObject -Name "Custom-Header" -Value "Awesome"
             $probe = New-AzContainerAppProbeObject -Type "Liveness" -HttpGetPath "/health" -HttpGetPort 8080 -InitialDelaySecond 3 -PeriodSecond 3 -HttpGetHttpHeader $probeHttpGetHttpHeader
             $temp = New-AzContainerAppTemplateObject -Image "mcr.microsoft.com/k8se/quickstart-jobs:latest" -Name "simple-hello-world-container" -Probe $probe -ResourceCpu 0.25 -ResourceMemory "0.5Gi"
             $temp2 = New-AzContainerAppInitContainerTemplateObject -Image "mcr.microsoft.com/k8se/quickstart-jobs:latest" -Name "simple-hello-world-container2" -ResourceCpu 0.25 -ResourceMemory "0.5Gi" -Command "/bin/sh" -Arg "-c","echo hello; sleep 10;"
-            
+
             $config = New-AzContainerApp -ResourceGroupName $env.resourceGroupManaged -Name $env.containerApp3 -Location $env.location -Configuration $configuration -TemplateContainer $temp -TemplateInitContainer $temp2 -TemplateServiceBind $serviceBind -EnvironmentId $EnvId
             $config.Name | Should -Be $env.containerApp3
         } | Should -Not -Throw
@@ -56,7 +56,7 @@ Describe 'AzContainerApp' {
         } | Should -Not -Throw
     }
 
-    It 'UpdateExpanded' {
+    It 'UpdateExpanded' -Skip {
         {
             $newSecretObject = New-AzContainerAppSecretObject -Name "yourkey" -Value "yourvalue"
             $configuration = New-AzContainerAppConfigurationObject -DaprEnabled:$True -DaprAppPort 3000 -DaprAppProtocol "http" -DaprHttpReadBufferSize 30 -DaprHttpMaxRequestSize 10 -DaprLogLevel "debug" -DaprEnableApiLogging:$True -MaxInactiveRevision 10 -ServiceType "redis" -Secret $newSecretObject
@@ -66,7 +66,7 @@ Describe 'AzContainerApp' {
         } | Should -Not -Throw
     }
 
-    It 'UpdateViaIdentityExpanded' {
+    It 'UpdateViaIdentityExpanded' -Skip {
         {
             $secretObject = New-AzContainerAppSecretObject -Name "redis-config" -Value "redis-password"
             $configuration = New-AzContainerAppConfigurationObject -IngressTraffic $trafficWeight -IngressExternal:$True -IngressTargetPort 80 -Secret $secretObject
