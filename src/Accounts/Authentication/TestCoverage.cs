@@ -37,6 +37,8 @@ namespace Microsoft.Azure.Commands.Common.Authentication
         private const string CsvHeaderTotalDuration = "TotalDuration";
         private const string CsvHeaderSanitizeDuration = "SanitizeDuration";
         private const string CsvHeaderSanitizePercentage = "SanitizePercentage";
+        private const string CsvHeaderSecretsDetected = "SecretsDetected";
+        private const string CsvHeaderDetectedProperties = "DetectedProperties";
         private const string CsvHeaderIsSuccess = "IsSuccess";
         private const string Delimiter = ",";
 
@@ -87,12 +89,14 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                          .Append(CsvHeaderTotalDuration).Append(Delimiter)
                          .Append(CsvHeaderSanitizeDuration).Append(Delimiter)
                          .Append(CsvHeaderSanitizePercentage).Append(Delimiter)
+                         .Append(CsvHeaderSecretsDetected).Append(Delimiter)
+                         .Append(CsvHeaderDetectedProperties).Append(Delimiter)
                          .Append(CsvHeaderIsSuccess);
 
             return headerBuilder.ToString();
         }
 
-        private string GenerateCsvItem(string commandName, string parameterSetName, string parameters, string sourceScript, int scriptLineNumber, string startDateTime, string endDateTime, string totalDuration, string sanitizeDuration, string sanitizePercentage, bool isSuccess)
+        private string GenerateCsvItem(string commandName, string parameterSetName, string parameters, string sourceScript, int scriptLineNumber, string startDateTime, string endDateTime, string totalDuration, string sanitizeDuration, string sanitizePercentage, string secretsDetected, string detectedProperties, bool isSuccess)
         {
             StringBuilder itemBuilder = new StringBuilder();
             itemBuilder.Append(commandName).Append(Delimiter)
@@ -105,6 +109,8 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                        .Append(totalDuration).Append(Delimiter)
                        .Append(sanitizeDuration).Append(Delimiter)
                        .Append(sanitizePercentage).Append(Delimiter)
+                       .Append(secretsDetected).Append(Delimiter)
+                       .Append(detectedProperties).Append(Delimiter)
                        .Append(isSuccess.ToString().ToLowerInvariant());
 
             return itemBuilder.ToString();
@@ -143,7 +149,16 @@ namespace Microsoft.Azure.Commands.Common.Authentication
                 var totalDuration = qos.Duration.TotalMilliseconds;
                 var sanitizeDuration = qos.SanitizerInfo?.SanitizeDuration.TotalMilliseconds ?? 0.0;
                 var sanitizePercentage = totalDuration == 0.0 ? 0.0 : sanitizeDuration / totalDuration;
-                var csvItem = GenerateCsvItem(commandName, qos.ParameterSetName, qos.Parameters, sourceScriptName, qos.ScriptLineNumber, qos.StartTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), qos.EndTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), totalDuration.ToString("F4"), sanitizeDuration.ToString("F4"), sanitizePercentage.ToString("P2"), qos.IsSuccess);
+                string secretsDetected = string.Empty, detectedProperties = string.Empty;
+                if (qos.SanitizerInfo != null)
+                {
+                    secretsDetected = qos.SanitizerInfo.SecretsDetected.ToString().ToLowerInvariant();
+                    if (qos.SanitizerInfo.SecretsDetected)
+                    {
+                        detectedProperties = qos.SanitizerInfo.DetectedProperties.Count == 0 ? "[PlainText]" : string.Join(";", qos.SanitizerInfo.DetectedProperties);
+                    }
+                }
+                var csvItem = GenerateCsvItem(commandName, qos.ParameterSetName, qos.Parameters, sourceScriptName, qos.ScriptLineNumber, qos.StartTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), qos.EndTime.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss"), totalDuration.ToString("F4"), sanitizeDuration.ToString("F4"), sanitizePercentage.ToString("P2"), secretsDetected, detectedProperties, qos.IsSuccess);
                 csvData.Append(csvItem);
 
                 Console.WriteLine($"Command Name: {commandName}");
